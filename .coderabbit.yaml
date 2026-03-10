@@ -1,20 +1,73 @@
 language: en-US
-tone_instructions: "Focus on JavaScript logic bugs, financial calculation accuracy, XSS vulnerabilities, and HTML/CSS best practices."
+tone_instructions: >
+  You are reviewing a single-file financial modeling platform (HTML + embedded CSS + JS).
+  Focus on: JavaScript logic bugs, financial calculation accuracy (WACC/ROIC/EVA/IRR/NPV/DSCR),
+  XSS vulnerabilities, event listener leaks, DOM safety, and arithmetic errors in formulas.
+  Be precise and reference line numbers.
 
 reviews:
   profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
   path_filters:
     - "*.html"
     - "*.js"
     - "*.css"
+    - "*.yaml"
   auto_review:
     enabled: true
     auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - main
+  finishing_touches:
+    docstrings:
+      enabled: false
+
+  instructions: |
+    This is a single-file HTML platform (NAQI_V16.html) with ~3500 lines.
+    It contains embedded JavaScript financial logic. Please review for:
+
+    ## Financial Calculations
+    - Verify WACC formula: equity% * Ke + debt% * Kd * (1 - taxRate)
+    - Verify ROIC: NOPAT / Invested Capital (annualized)
+    - Verify EVA: NOPAT - WACC * Invested Capital
+    - Verify IRR bisection logic and that terminal value is included
+    - Verify debt service (PMT must not double-count interest)
+    - Verify net profit in ramp/forecast tables: NP = (rev - COGS*ramp - OPEX_fixed - dep) * (1 - tax)
+    - Verify NPV includes working capital recovery and terminal value
+    - Check payback period uses cumulative discounted CF correctly
+    - Check DSCR = EBITDA / debt_service (not net profit)
+    - Check break-even: BE_bottles = OPEX / (price - COGS_per_bottle)
+
+    ## JavaScript Bugs
+    - Undefined variables or missing return values
+    - Event listeners added without cleanup (leaks)
+    - innerHTML with unescaped user input (XSS)
+    - Off-by-one errors in loops (12-month, 36-month, 10-year forecasts)
+    - Chart canvas ID mismatches (mkC calls referencing non-existent IDs)
+    - State fields missing from undo/redo snapshots
+
+    ## Data Integrity
+    - SKU mix normalization (should sum to ~100%)
+    - BOM cost rollup (qty * costPerUnit * exrate)
+    - OPEX vs HR salary sync (dual-entry risk)
+    - localStorage quota (warn if projected state > 2MB)
+
+    ## Security
+    - Any innerHTML using non-escaped user data
+    - eval() or Function() usage
+    - Unvalidated numeric inputs used in calculations
 
 tools:
   htmlhint:
     enabled: true
   eslint:
-    enabled: true
+    enabled: false   # No eslint config file present — would fail
   oxc:
-    enabled: true
+    enabled: false   # Requires package.json / node_modules
+  biome:
+    enabled: false

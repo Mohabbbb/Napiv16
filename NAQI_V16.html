@@ -1508,10 +1508,10 @@ const saveSnapsToLS=()=>safe(()=>localStorage.setItem(LS_SNAPS,JSON.stringify(S.
 const UNDO=[];const REDO=[];
 let _lastUndoPush=0;
 // BUG-04 FIX: exclude auditLog from undo snap
+// BUG-15 FIX: capture full state (not just sl/cx/ox/hr/skus) so all changes are undoable
 const pushUndo=()=>{
   const _now=Date.now();if(_now-_lastUndoPush<300)return;_lastUndoPush=_now;
-  const _snap={sl:JSON.parse(JSON.stringify(S.sl)),cx:JSON.parse(JSON.stringify(S.cx)),ox:JSON.parse(JSON.stringify(S.ox)),hr:JSON.parse(JSON.stringify(S.hr)),skus:JSON.parse(JSON.stringify(S.skus||[]))};
-  UNDO.push(JSON.stringify(_snap));if(UNDO.length>30)UNDO.shift();REDO.length=0;
+  UNDO.push(JSON.stringify(getState()));if(UNDO.length>30)UNDO.shift();REDO.length=0;
 };
 const doUndo=()=>safe(()=>{if(!UNDO.length)return toast("warn","Nothing to undo","");REDO.push(JSON.stringify(getState()));applyState(JSON.parse(UNDO.pop()));showUndoBar("Undone")});
 const doRedo=()=>safe(()=>{if(!REDO.length)return toast("warn","Nothing to redo","");UNDO.push(JSON.stringify(getState()));applyState(JSON.parse(REDO.pop()));showUndoBar("Redone")});
@@ -1588,7 +1588,8 @@ const calcModel=(overrides={})=>{
   const nPay=sl.finYrs*12;
   const gracePay=sl.finGrace;
   const pmt=debt>0&&intR>0&&nPay>gracePay?(debt*intR*Math.pow(1+intR,nPay-gracePay))/(Math.pow(1+intR,nPay-gracePay)-1):debt>0&&nPay>gracePay?debt/(nPay-gracePay):0;
-  const debtSvcMo=(pmt+debt*intR)*exr;
+  // BUG-11 FIX: pmt already includes interest — removed double-count of debt*intR
+  const debtSvcMo=pmt*exr;
   const dscr=debtSvcMo>0?ebitdaRaw/debtSvcMo:99;
   const tax=Math.max(0,ebitdaRaw-_depMo)*(sl.tax/100);
   const netProfit=ebitdaRaw-_depMo-tax;
@@ -1623,7 +1624,8 @@ const calcModel=(overrides={})=>{
   const _wcRecov=(wc*exr)/Math.pow(1+disc,10);
   const npv10=cf10.reduce((a,c)=>a+c.disc,0)+_tv+_wcRecov-totInv*exr;
   const terminalValue=_tv;
-  const npvAt=rate=>cf10.reduce((a,c,i)=>a+c.cf/Math.pow(1+rate,i+1),0)-totInv*exr;
+  // BUG-12 FIX: include terminal value and WC recovery in IRR (consistent with NPV)
+  const npvAt=rate=>cf10.reduce((a,c,i)=>a+c.cf/Math.pow(1+rate,i+1),0)+_tv/Math.pow(1+rate,10)+_wcRecov/Math.pow(1+rate,10)-totInv*exr;
   let irr10=0;
   const _npv0=npvAt(0);
   if(Math.abs(_npv0)<1){irr10=0;}
@@ -2098,10 +2100,13 @@ const renderBOMTabs=()=>safe(()=>{
   tabsEl.innerHTML=S.skus.filter(s=>s.active).map((sk,i)=>
     `<button class="bom-tab ${i===_bomTab?'bom-tab-active':''}" data-bom-idx="${i}">${eQ(sk.name)}</button>`
   ).join('');
-  tabsEl.addEventListener('click',e=>{
+  // BUG-16 FIX: remove previous handler before adding new one to prevent accumulation
+  if(tabsEl._bomClickHandler)tabsEl.removeEventListener('click',tabsEl._bomClickHandler);
+  tabsEl._bomClickHandler=e=>{
     const btn=e.target.closest('[data-bom-idx]');
     if(!btn)return;_bomTab=parseInt(btn.dataset.bomIdx);renderBOMContent();renderBOMTabs();
-  },{once:false});
+  };
+  tabsEl.addEventListener('click',tabsEl._bomClickHandler);
   renderBOMContent();
 });
 
@@ -2691,7 +2696,8 @@ const renderRampEngine=()=>safe(()=>{
       const v=$('rampv-'+idx);if(v)v.textContent=inp.value+'%';renderRampEngine();scheduleSave();
     });
   });
-  const rows=ramp.map((r,i)=>{const f=r/100;const rev=R.totRev*f;const np=R.netProfit*f;return{m:i+1,r,rev,np};});
+  // BUG-13 FIX: NP not linear with volume — OPEX is fixed, only rev/COGS scale with ramp
+  const rows=ramp.map((r,i)=>{const f=r/100;const rev=R.totRev*f;const cogs_r=R.totPkgCogs*f;const ebit_r=rev-cogs_r-R.totOpex-R._depMo;const np=ebit_r-Math.max(0,ebit_r)*(R.sl.tax/100);return{m:i+1,r,rev,np};});
   mkC('ch-ramp','line',{labels:rows.map(r=>'M'+r.m),datasets:[
     {label:'Revenue SYP M',data:rows.map(r=>+(r.rev/1e6).toFixed(1)),borderColor:'var(--c1)',backgroundColor:'rgba(0,245,195,.06)',fill:true,tension:.4},
     {label:'Net Profit SYP M',data:rows.map(r=>+(r.np/1e6).toFixed(1)),borderColor:'var(--c6)',backgroundColor:'transparent',tension:.4}
@@ -2885,7 +2891,8 @@ const updateExecSuite=(R)=>safe(()=>{
   for(let m=1;m<=36;m++){
     const yr=Math.ceil(m/12);const ri=Math.min(11,m-1);const rf=ramp[ri]/100;
     const revF=Math.pow(1+pEsc,yr-1);const opexF=Math.pow(1+inf,yr-1);
-    const rev=R.totRev*rf*revF;const np=R.netProfit*rf*revF;const ds=R.debtSvcMo;
+    // BUG-14 FIX: NP recomputed properly — COGS scales with ramp, OPEX only inflates
+    const rev=R.totRev*rf*revF;const cogs_m=R.totPkgCogs*rf*revF;const opex_m=R.totOpex*opexF;const ebit_m=rev-cogs_m-opex_m-R._depMo;const np=ebit_m-Math.max(0,ebit_m)*(R.sl.tax/100);const ds=R.debtSvcMo;
     const cf=np+R._depMo-ds;cum+=cf;
     if(m<=12||m%3===0)rows+=`<tr><td>${m}</td><td>${yr}</td><td>${N(rf*100,0)}%</td><td style="font-family:var(--mono)">${M(rev,1)}</td><td style="font-family:var(--mono);color:${np>=0?'var(--c1)':'var(--red)'}">${M(np,1)}</td><td style="font-family:var(--mono)">${M(ds,1)}</td><td style="font-family:var(--mono);color:${cf>=0?'var(--green)':'var(--red)'}">${M(cf,1)}</td><td style="font-family:var(--mono)">${N(cum/1e9,3)}</td></tr>`;
   }
