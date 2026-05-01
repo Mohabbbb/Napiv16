@@ -1261,11 +1261,6 @@ const S={
     {id:21,l:"ISO & Licensing",c:"Soft Costs",a:6000},{id:22,l:"Contingency (5%)",c:"Contingency",a:0}
   ],
   ox:[
-    {id:1,l:"Factory Manager",c:"Management",a:1200},{id:2,l:"Operations Supervisor",c:"Management",a:800},
-    {id:3,l:"Production Operators x6",c:"Operations",a:1800},{id:4,l:"QC Technicians x2",c:"Quality",a:500},
-    {id:5,l:"Maintenance x2",c:"Maintenance",a:600},{id:6,l:"Warehouse Staff x3",c:"Operations",a:600},
-    {id:7,l:"Delivery Drivers x2",c:"Logistics",a:400},{id:8,l:"Sales Reps x2",c:"Sales",a:600},
-    {id:9,l:"Accountant/Admin",c:"Admin",a:400},{id:10,l:"Security Guards x2",c:"Operations",a:300},
     {id:11,l:"Electricity (production)",c:"Energy",a:800},{id:12,l:"Generator Fuel",c:"Energy",a:500},
     {id:13,l:"Water Source Cost",c:"Energy",a:200},{id:14,l:"Compressed Air",c:"Energy",a:100},
     {id:15,l:"Equipment Maintenance",c:"Maintenance",a:400},{id:16,l:"Spare Parts Reserve",c:"Maintenance",a:200},
@@ -1496,6 +1491,12 @@ const applyState=d=>safe(()=>{
   if(d.v12){if(!S.v12)S.v12={};Object.assign(S.v12,d.v12);}
   if(d.v16){if(!S.v16)S.v16={projects:[],scenarios:[]};Object.assign(S.v16,d.v16);}
   recalcMaxIds(); // BUG-09 FIX
+  // MIGRATION: remove HR-duplicate salary items from S.ox (moved to S.hr in this version)
+  if(!S.sl._hrMigrated){
+    const HR_OX_LABELS=["Factory Manager","Operations Supervisor","Production Operators x6","QC Technicians x2","Maintenance x2","Warehouse Staff x3","Delivery Drivers x2","Sales Reps x2","Accountant/Admin","Security Guards x2"];
+    S.ox=S.ox.filter(r=>!HR_OX_LABELS.includes(r.l));
+    S.sl._hrMigrated=true;
+  }
   NAQI.batch(()=>{renderAll();recalc();NAQI.emit('state:loaded');});
 });
 const loadLS=()=>safe(()=>{const r=localStorage.getItem(LS_KEY);if(r){applyState(JSON.parse(r));return true}return false});
@@ -1563,7 +1564,9 @@ const calcModel=(overrides={})=>{
   const totNb=skuR.reduce((a,s)=>a+s.nb,0);
   const totRev=skuR.reduce((a,s)=>a+s.rev,0);
   const totPkgCogs=skuR.reduce((a,s)=>a+s.cogs,0);
-  const totOx=S.ox.reduce((a,r)=>a+r.a,0);
+  const totNonHrOx=S.ox.reduce((a,r)=>a+r.a,0);
+  const totHrPayroll=S.hr.reduce((a,r)=>a+(r.cnt||1)*(r.sal||0),0);
+  const totOx=totNonHrOx+totHrPayroll;
   const opexMult=overrides.opexMult||1;
   const totOpex=totOx*exr*opexMult;
   const oxPerB=totNb>0?totOpex/totNb:0;
@@ -1677,7 +1680,7 @@ const calcModel=(overrides={})=>{
   if(gm>40)hs+=5;else if(gm<15)hs-=5;
   if(roic>wacc*100)hs+=5;else hs-=5;
   const healthScore=Math.max(0,Math.min(100,hs));
-  return{sl,exr,skuR,totNb,totRev,totPkgCogs,totOpex,totOx,grossProfit,gm,ebitda,ebitdaM,ebit,netProfit,nm,tax,_depMo,dscr,debtSvcMo,pmt,debt,totCx,totCxBase,contingency,wc,totInv,npv10,irr10,payback,beBtl,beRev,sfty,bP,bV,cm_btl,cf10,terminalValue,fcfMo,fcfe,totalLiters,wacc:wacc*100,roic,evaMo,nopat,investedCapSYP,Ke:Ke*100,Kd:Kd*100,taxR:taxR*100,eqFrac,healthScore};
+  return{sl,exr,skuR,totNb,totRev,totPkgCogs,totOpex,totOx,totNonHrOx,totHrPayroll,grossProfit,gm,ebitda,ebitdaM,ebit,netProfit,nm,tax,_depMo,dscr,debtSvcMo,pmt,debt,totCx,totCxBase,contingency,wc,totInv,npv10,irr10,payback,beBtl,beRev,sfty,bP,bV,cm_btl,cf10,terminalValue,fcfMo,fcfe,totalLiters,wacc:wacc*100,roic,evaMo,nopat,investedCapSYP,Ke:Ke*100,Kd:Kd*100,taxR:taxR*100,eqFrac,healthScore};
 };
 
 // ═══════════════════════════════════════════════
@@ -1914,7 +1917,7 @@ const renderRowsOX=()=>safe(()=>{
   el._oxClick=e=>{if(e.target.dataset.action!=='del')return;const row=e.target.closest('.drg-ox');if(!row)return;pushUndo();S.ox=S.ox.filter(x=>x.id!==parseInt(row.dataset.id));recalc();scheduleSave();renderRowsOX();};
   el.addEventListener('change',el._oxChange);el.addEventListener('click',el._oxClick);
   const R=NAQI.model();
-  sH('tot-ox',`Total OPEX: ${U(R.totOx)}/mo = ${M(R.totOpex,1)} SYP/mo`);
+  sH('tot-ox',`Non-HR OPEX: ${U(R.totNonHrOx)}/mo + HR Payroll: ${U(R.totHrPayroll)}/mo = Total ${U(R.totOx)}/mo (${M(R.totOpex,1)} SYP)`);
   sH('k-ox1',M(R.totOpex,1));sH('k-ox1s',U(R.totOx)+'/mo');
   sH('k-ox2',N(R.totNb>0?R.totOpex/R.totNb:0,0));
   sH('k-ox3',P(R.totRev>0?R.totOpex/R.totRev*100:0));
@@ -1938,7 +1941,7 @@ const renderRowsHR=()=>safe(()=>{
   el.addEventListener('change',el._hrChange);el.addEventListener('click',el._hrClick);
   const totPay=S.hr.reduce((a,r)=>a+r.cnt*r.sal,0);
   const totStaff=S.hr.reduce((a,r)=>a+r.cnt,0);
-  sH('tot-hr',`Total: ${totStaff} staff | Payroll: ${U(totPay)}/mo`);
+  sH('tot-hr',`Total: ${totStaff} staff | Payroll: ${U(totPay)}/mo | ${M(totPay*(S.sl.exrate||12000),1)} SYP — <span style="color:var(--c1)">✓ Live in financial model</span>`);
   sH('k-hr1',totStaff);sH('k-hr2',U(totPay));sH('k-hr2s',M(totPay*(S.sl.exrate||12000),1)+' SYP');
   const R=NAQI.model();
   sH('k-hr3',P(R.totOpex>0?totPay*R.exr/R.totOpex*100:0));
@@ -3455,7 +3458,7 @@ const showTab=(idx)=>safe(()=>{
   // BUG-10 FIX: guard with typeof check then call registry
   if(typeof NAQI.renderActiveTab==='function')NAQI.renderActiveTab(idx);
   NAQI.emit('tab:changed',idx);
-  recalc();
+  if(NAQI._dirty)recalc();
 },'showTab:'+idx);
 
 // ═══════════════════════════════════════════════
