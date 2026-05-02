@@ -1967,16 +1967,24 @@ const renderRowsHR=()=>safe(()=>{
 });
 
 // Sync catalog → all SKU BOMs. Runs after any S.rm change.
+const normMat=s=>s.trim().toLowerCase();
+const rmToUsd=(r)=>{
+  const v=r.usd||0;const cur=r.currency||'USD';
+  if(cur==='SAR')return v/(S.sl.sarUsd||3.75);
+  if(cur==='EUR')return v/(S.sl.eurUsd||0.92);
+  if(cur==='SYP')return v/(S.sl.exrate||12000);
+  return v;
+};
 const syncRmToBom=()=>safe(()=>{
-  S.rm.forEach(r=>{
-    const effective=(r.usd||0)*(1+(r.waste||0)/100);
-    S.skus.forEach(sk=>{
-      (sk.bom||[]).forEach(b=>{
-        if(b.mat===r.mat){
-          b.costPerUnit=effective;
-          if((r.qtyPerBottle||0)>0)b.qty=r.qtyPerBottle;
-        }
-      });
+  const catMap=new Map(S.rm.map(r=>[normMat(r.mat),r]));
+  S.skus.forEach(sk=>{
+    (sk.bom||[]).forEach(b=>{
+      const r=catMap.get(normMat(b.mat));
+      if(!r)return;
+      const usd=rmToUsd(r);
+      const effective=usd*(1+(r.waste||0)/100);
+      b.costPerUnit=effective;
+      if((r.qtyPerBottle||0)>0)b.qty=r.qtyPerBottle;
     });
   });
 },'syncRmToBom');
@@ -1985,7 +1993,8 @@ const renderRowsRM=()=>safe(()=>{
   const el=$('rows-rm');if(!el)return;
   const exr=S.sl.exrate||12000;
   el.innerHTML=S.rm.map(r=>{
-    const eff=(r.usd||0)*(1+(r.waste||0)/100);
+    const unitUsd=rmToUsd(r);
+    const eff=unitUsd*(1+(r.waste||0)/100);
     const sypPerBtl=eff*(r.qtyPerBottle||1)*exr;
     const curs=['USD','SAR','EUR','SYP'];
     return`<div class="drg-rmcat" data-id="${r.id}">
@@ -2019,8 +2028,7 @@ const renderRowsRM=()=>safe(()=>{
   el.addEventListener('change',el._rmChange);el.addEventListener('click',el._rmClick);
   const R=NAQI.model();
   const totUSD=R.skuR.reduce((a,s)=>a+s.nb*s.rmCost,0);
-  sH('tot-rm',`USD exposure: ${U(totUSD)}/mo | COGS: ${M(R.totPkgCogs,1)} SYP/mo | Annual: ${M(R.totPkgCogs*12,0)} SYP`);
-  sH('tb-rm',S.rm.length+' mats');
+  sH('tot-rm',`USD exposure: ${U(totUSD)}/mo | COGS: ${M(R.totPkgCogs,1)} SYP/mo | Annual: ${M(R.totPkgCogs*12,0)} SYP | ${S.rm.length} materials`);
 });
 
 const renderRowsMkt=()=>safe(()=>{
