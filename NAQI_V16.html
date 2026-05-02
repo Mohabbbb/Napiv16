@@ -1254,7 +1254,7 @@ const S={
       {id:7,mat:"Ink & Date Code",qty:1,uom:"btl",costPerUnit:.0002}
     ]}
   ],
-  sl:{exrate:12000,tax:5,discount:12,inflation:30,priceEsc:5,cogsEsc:3,termGrowth:2,sarUsd:3.75,eurUsd:0.92,wcMonths:2,hrs:8,days:26,loss:2,util:100,finEq:40,finInt:12,finYrs:5,finGrace:6},
+  sl:{exrate:12000,tax:5,discount:12,inflation:30,priceEsc:5,cogsEsc:3,volGrowth:10,termGrowth:2,sarUsd:3.75,eurUsd:0.92,wcMonths:2,hrs:8,days:26,loss:2,util:100,finEq:40,finInt:12,finYrs:5,finGrace:6},
   cx:[
     {id:1,l:"Land & Site (2,000m2)",c:"Land",a:75000},{id:2,l:"Civil & Construction",c:"Civil",a:120000},
     {id:3,l:"Foundation & Earthworks",c:"Civil",a:15000},{id:4,l:"Blow Moulding Machine x2",c:"Equipment",a:80000},
@@ -1617,13 +1617,15 @@ const calcModel=(overrides={})=>{
   const disc=Math.max(0.01,sl.discount/100);
   const _termGrowth=Math.min(sl.termGrowth/100,disc-0.001);
   const pEsc=(sl.priceEsc||5)/100;const cEsc=(sl.cogsEsc||3)/100;const inf=(sl.inflation||30)/100;
+  const vGrow=(sl.volGrowth??10)/100;
   const cf10=[];
   for(let yr=1;yr<=10;yr++){
-    const rampF=yr<=1?1:Math.pow(1+pEsc,yr-1);
-    const cogsF=yr<=1?1:Math.pow(1+cEsc,yr-1);
-    const opexF=yr<=1?1:Math.pow(1+inf,yr-1);
-    const _rev=totRev*rampF*12;
-    const _cogs=totPkgCogs*cogsF*12;
+    const priceF=Math.pow(1+pEsc,yr-1);
+    const volF=Math.pow(1+vGrow,yr-1);
+    const cogsF=Math.pow(1+cEsc,yr-1);
+    const opexF=Math.pow(1+inf,yr-1);
+    const _rev=totRev*priceF*volF*12;
+    const _cogs=totPkgCogs*cogsF*volF*12;
     const _opex=totOpex*opexF*12;
     const _dep=_depMo*12;
     const _ebitda=_rev-_cogs-_opex;
@@ -1633,7 +1635,7 @@ const calcModel=(overrides={})=>{
     const _ds=debtSvcMo*Math.min(12,Math.max(0,nPay-(yr-1)*12));
     const _cf=_np+_dep-_ds;
     const _disc=_cf/Math.pow(1+disc,yr);
-    cf10.push({yr,rev:_rev,cogs:_cogs,opex:_opex,ebitda:_ebitda,np:_np,ds:_ds,cf:_cf,disc:_disc,cum:0});
+    cf10.push({yr,rev:_rev,cogs:_cogs,opex:_opex,ebitda:_ebitda,np:_np,ds:_ds,cf:_cf,disc:_disc,cum:0,volF,priceF});
   }
   let cumCF=0;cf10.forEach(r=>{cumCF+=r.cf;r.cum=cumCF;});
   const _lastCF=cf10[cf10.length-1].cf;
@@ -1805,6 +1807,7 @@ const initSliders=()=>safe(()=>{
     {key:'inflation',label:'Inflation Rate %',min:0,max:200,val:30,fmt:'pct'},
     {key:'priceEsc',label:'Price Escalation %/yr',min:-5,max:30,val:5,fmt:'pct'},
     {key:'cogsEsc',label:'COGS Escalation %/yr',min:0,max:30,val:3,fmt:'pct'},
+    {key:'volGrowth',label:'Volume Growth %/yr',min:0,max:50,val:10,fmt:'pct'},
     {key:'tax',label:'Income Tax Rate %',min:0,max:40,val:5,fmt:'pct'},
     {key:'discount',label:'Discount Rate % (WACC)',min:5,max:40,val:12,fmt:'pct'},
     {key:'termGrowth',label:'Terminal Growth Rate %',min:0,max:10,val:2,fmt:'pct'},
@@ -2690,11 +2693,13 @@ const renderCF72=()=>safe(()=>{
   const R=NAQI.model();
   const ramp=S.v8.ramp||[40,55,68,78,88,94,98,100,100,100,100,100];
   const pEsc=(R.sl.priceEsc||5)/100;const cEsc=(R.sl.cogsEsc||3)/100;const inf=(R.sl.inflation||30)/100;
+  const vGrow=(R.sl.volGrowth??10)/100;
   const rows=[];let cum=0;
   for(let m=1;m<=72;m++){
     const yr=Math.ceil(m/12);const ri=Math.min(11,m-1);const rf=ramp[ri]/100;
+    const volF=Math.pow(1+vGrow,yr-1);
     const revF=Math.pow(1+pEsc,yr-1);const cogsF=Math.pow(1+cEsc,yr-1);const opexF=Math.pow(1+inf,yr-1);
-    const rev=R.totRev*rf*revF;const cogs=R.totPkgCogs*rf*cogsF;const opex=R.totOpex*opexF;
+    const rev=R.totRev*rf*revF*volF;const cogs=R.totPkgCogs*rf*cogsF*volF;const opex=R.totOpex*opexF;
     const ebitda=rev-cogs-opex;const dep=R._depMo;const np=ebitda-dep-(R.sl.tax/100)*Math.max(0,ebitda-dep);
     const ds=R.debtSvcMo*Math.min(1,Math.max(0,(R.sl.finYrs*12-(m-1))/1));
     const cf=np+dep-ds;cum+=cf;
@@ -2954,13 +2959,15 @@ const updateExecSuite=(R)=>safe(()=>{
   // 36-month forecast
   const ramp=S.v8.ramp||[40,55,68,78,88,94,98,100,100,100,100,100];
   const pEsc=(R.sl.priceEsc||5)/100;const inf=(R.sl.inflation||30)/100;
+  const vGrow=(R.sl.volGrowth??10)/100;
   let rows='<thead><tr><th>Mo</th><th>Yr</th><th>Cap%</th><th>Revenue SYP M</th><th>Net Profit SYP M</th><th>Debt Svc SYP M</th><th>Free CF SYP M</th><th>Cumulative SYP B</th></tr></thead><tbody>';
   let cum=0;
   for(let m=1;m<=36;m++){
     const yr=Math.ceil(m/12);const ri=Math.min(11,m-1);const rf=ramp[ri]/100;
+    const volF=Math.pow(1+vGrow,yr-1);
     const revF=Math.pow(1+pEsc,yr-1);const opexF=Math.pow(1+inf,yr-1);
     // BUG-14 FIX: NP recomputed properly — COGS scales with ramp, OPEX only inflates
-    const rev=R.totRev*rf*revF;const cogs_m=R.totPkgCogs*rf*revF;const opex_m=R.totOpex*opexF;const ebit_m=rev-cogs_m-opex_m-R._depMo;const np=ebit_m-Math.max(0,ebit_m)*(R.sl.tax/100);const ds=R.debtSvcMo;
+    const rev=R.totRev*rf*revF*volF;const cogs_m=R.totPkgCogs*rf*revF*volF;const opex_m=R.totOpex*opexF;const ebit_m=rev-cogs_m-opex_m-R._depMo;const np=ebit_m-Math.max(0,ebit_m)*(R.sl.tax/100);const ds=R.debtSvcMo;
     const cf=np+R._depMo-ds;cum+=cf;
     if(m<=12||m%3===0)rows+=`<tr><td>${m}</td><td>${yr}</td><td>${N(rf*100,0)}%</td><td style="font-family:var(--mono)">${M(rev,1)}</td><td style="font-family:var(--mono);color:${np>=0?'var(--c1)':'var(--red)'}">${M(np,1)}</td><td style="font-family:var(--mono)">${M(ds,1)}</td><td style="font-family:var(--mono);color:${cf>=0?'var(--green)':'var(--red)'}">${M(cf,1)}</td><td style="font-family:var(--mono)">${N(cum/1e9,3)}</td></tr>`;
   }
