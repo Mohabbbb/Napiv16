@@ -128,6 +128,8 @@ body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:13p
 .drg-ox{display:grid;grid-template-columns:2fr .8fr .8fr .8fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
 .dh.rm{grid-template-columns:2fr .5fr .4fr .7fr .7fr .7fr .5fr 28px;display:grid}
 .drg-rm{display:grid;grid-template-columns:2fr .5fr .4fr .7fr .7fr .7fr .5fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
+.dh.rmcat{grid-template-columns:1.8fr .7fr .3fr .55fr .55fr .45fr .4fr .4fr .65fr 28px;display:grid}
+.drg-rmcat{display:grid;grid-template-columns:1.8fr .7fr .3fr .55fr .55fr .45fr .4fr .4fr .65fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
 .bom-tab{background:none;border:1px solid var(--b1);border-radius:6px;color:var(--t2);cursor:pointer;padding:4px 10px;font-size:10px;transition:all .15s;font-family:var(--body)}
 .bom-tab:hover{border-color:var(--c1);color:var(--c1)}
 .bom-tab-active{background:rgba(0,245,195,.1);border-color:var(--c1);color:var(--c1);font-weight:600}
@@ -547,6 +549,12 @@ body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:13p
     <div class="kpi kc2"><div class="kl">RM/Bottle Avg</div><div class="kv" id="k-rm2" style="color:var(--c2)">—</div><div class="ks">SYP</div></div>
     <div class="kpi kc3"><div class="kl">USD Exposure</div><div class="kv" id="k-rm3" style="color:var(--amber)">—</div><div class="ks">$/month</div></div>
     <div class="kpi kc5"><div class="kl">RM % Revenue</div><div class="kv" id="k-rm4" style="color:var(--c5)">—</div><div class="ks">%</div></div>
+  </div>
+  <div class="card c-rd mb">
+    <div class="card-head"><span class="card-title">Global Materials Catalog</span><button class="btn-add" id="btn-add-rm">+ Add Material</button></div>
+    <div class="dh rmcat"><span>Material</span><span>Supplier</span><span>Curr</span><span>Unit $</span><span>MOQ</span><span>Qty/Btl</span><span>Waste%</span><span>Lead d</span><span>SYP/Btl</span><span></span></div>
+    <div id="rows-rm" class="h340"></div>
+    <div class="dr-tot" id="tot-rm">—</div>
   </div>
   <div class="card c-tl mb">
     <div class="card-head"><span class="card-title">BOM by SKU</span><div id="bom-tabs" style="display:flex;gap:6px"></div></div>
@@ -1283,12 +1291,17 @@ const S={
     {id:11,pos:"Security Guard",dept:"Operations",cnt:2,sal:150}
   ],
   rm:[
-    {id:1,mat:"Preform 330ml PCO1881 14g",sku:"330ml",usd:.0169},{id:2,mat:"Preform 500ml PCO1881 18g",sku:"500ml",usd:.0215},
-    {id:3,mat:"Preform 1500ml PCO1881 30g",sku:"1500ml",usd:.0345},{id:4,mat:"Water Cap 28mm (all)",sku:"all",usd:.0053},
-    {id:5,mat:"BOPP Label 330ml",sku:"330ml",usd:.0049},{id:6,mat:"BOPP Label 500ml",sku:"500ml",usd:.0068},
-    {id:7,mat:"BOPP Label 1500ml",sku:"1500ml",usd:.011},{id:8,mat:"Shrink Film (est/btl)",sku:"all",usd:.003},
-    {id:9,mat:"Carton (per 12 btl)",sku:"all",usd:.005},{id:10,mat:"Treated Water (per btl)",sku:"all",usd:.0008},
-    {id:11,mat:"Ink & Date Code",sku:"all",usd:.0002}
+    {id:1,mat:"Preform 330ml PCO1881 14g",sku:"330ml",supplier:"Anhui Creative",currency:"USD",usd:.0169,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:2,mat:"Preform 500ml PCO1881 18g",sku:"500ml",supplier:"Anhui Creative",currency:"USD",usd:.0215,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:3,mat:"Preform 1500ml PCO1881 30g",sku:"1500ml",supplier:"Anhui Creative",currency:"USD",usd:.0345,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:4,mat:"Water Cap 28mm (all)",sku:"all",supplier:"Anhui Creative",currency:"USD",usd:.0053,moq:720000,qtyPerBottle:1,waste:1,leadTime:20},
+    {id:5,mat:"BOPP Label 330ml",sku:"330ml",supplier:"Anhui Creative",currency:"USD",usd:.0049,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:6,mat:"BOPP Label 500ml",sku:"500ml",supplier:"Anhui Creative",currency:"USD",usd:.0068,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:7,mat:"BOPP Label 1500ml",sku:"1500ml",supplier:"Anhui Creative",currency:"USD",usd:.011,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:8,mat:"Shrink Film (est/btl)",sku:"all",supplier:"Local",currency:"USD",usd:.003,moq:100,qtyPerBottle:1,waste:3,leadTime:5},
+    {id:9,mat:"Carton (per 12 btl)",sku:"all",supplier:"Local",currency:"USD",usd:.005,moq:5000,qtyPerBottle:.0833,waste:1,leadTime:3},
+    {id:10,mat:"Treated Water (per btl)",sku:"all",supplier:"Local Well",currency:"USD",usd:.0008,moq:0,qtyPerBottle:1,waste:30,leadTime:0},
+    {id:11,mat:"Ink & Date Code",sku:"all",supplier:"Local",currency:"USD",usd:.0002,moq:0,qtyPerBottle:1,waste:0,leadTime:1}
   ],
   mkt:[
     {id:1,size:"0.5L",pack:"12 btl/case",factory:22000,wholesale:24150,consumer:2215,ours:2215,notes:"Ministry official"},
@@ -1497,6 +1510,7 @@ const applyState=d=>safe(()=>{
     S.ox=S.ox.filter(r=>!HR_OX_LABELS.includes(r.l));
     S.sl._hrMigrated=true;
   }
+  syncRmToBom(); // sync catalog → SKU BOMs before recalc
   NAQI.batch(()=>{renderAll();recalc();NAQI.emit('state:loaded');});
 });
 const loadLS=()=>safe(()=>{const r=localStorage.getItem(LS_KEY);if(r){applyState(JSON.parse(r));return true}return false});
@@ -1889,7 +1903,7 @@ const addRow=type=>safe(()=>{
   if(type==='cx'){S.cx.splice(S.cx.length-1,0,{id:++S._ids.cx,l:"New Item",c:"Equipment",a:0});renderRowsCX();}
   else if(type==='ox'){S.ox.push({id:++S._ids.ox,l:"New Item",c:"Admin",a:0});renderRowsOX();}
   else if(type==='hr'){S.hr.push({id:++S._ids.hr,pos:"New Position",dept:"Operations",cnt:1,sal:300});renderRowsHR();}
-  else if(type==='rm'){S.rm.push({id:++S._ids.rm,mat:"New Material",sku:"all",usd:0});renderRowsRM();}
+  else if(type==='rm'){S.rm.push({id:++S._ids.rm,mat:"New Material",sku:"all",supplier:"",currency:"USD",usd:0,moq:0,qtyPerBottle:1,waste:0,leadTime:0});renderRowsRM();}
   else if(type==='mkt'){S.mkt.push({id:++S._ids.mkt,size:"New",pack:"",factory:0,wholesale:0,consumer:0,ours:0,notes:""});renderRowsMkt();}
   else if(type==='cond'){S.conds.push({id:++S._ids.cond,factor:"New Factor",val:"0",trend:"stable",impact:"Medium",notes:""});renderRowsCond();}
   else if(type==='compp'){S.compP.push({id:++S._ids.compP,date:new Date().toISOString().slice(0,10),brand:"Brand",sku:"0.5L",price:2000,channel:"Retail",notes:""});renderRowsCompP();}
@@ -1949,10 +1963,61 @@ const renderRowsHR=()=>safe(()=>{
   sH('tb-hr',totStaff+' staff');
 });
 
+// Sync catalog → all SKU BOMs. Runs after any S.rm change.
+const syncRmToBom=()=>safe(()=>{
+  S.rm.forEach(r=>{
+    const effective=(r.usd||0)*(1+(r.waste||0)/100);
+    S.skus.forEach(sk=>{
+      (sk.bom||[]).forEach(b=>{
+        if(b.mat===r.mat){
+          b.costPerUnit=effective;
+          if((r.qtyPerBottle||0)>0)b.qty=r.qtyPerBottle;
+        }
+      });
+    });
+  });
+},'syncRmToBom');
+
 const renderRowsRM=()=>safe(()=>{
   const el=$('rows-rm');if(!el)return;
-  if(!el)return;
-  sH('tb-rm',S.rm.length+' items');
+  const exr=S.sl.exrate||12000;
+  el.innerHTML=S.rm.map(r=>{
+    const eff=(r.usd||0)*(1+(r.waste||0)/100);
+    const sypPerBtl=eff*(r.qtyPerBottle||1)*exr;
+    const curs=['USD','SAR','EUR','SYP'];
+    return`<div class="drg-rmcat" data-id="${r.id}">
+      <input class="ixs" value="${eQ(r.mat)}" data-field="mat">
+      <input class="ixs" value="${eQ(r.supplier||'')}" data-field="supplier">
+      <select class="ixs" data-field="currency">${curs.map(c=>`<option${(r.currency||'USD')===c?' selected':''}>${c}</option>`).join('')}</select>
+      <input class="ixs" type="number" value="${r.usd||0}" data-field="usd" step="0.0001" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.moq||0}" data-field="moq" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.qtyPerBottle??1}" data-field="qtyPerBottle" step="0.0001" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.waste||0}" data-field="waste" step="0.1" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.leadTime||0}" data-field="leadTime" style="font-family:var(--mono)">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--c1);padding:2px 4px">${N(sypPerBtl,1)}</span>
+      <button class="btn-rm" data-action="del">✕</button>
+    </div>`;
+  }).join('');
+  el.removeEventListener('change',el._rmChange||null);el.removeEventListener('click',el._rmClick||null);
+  el._rmChange=e=>{
+    const row=e.target.closest('.drg-rmcat');if(!row)return;
+    const id=parseInt(row.dataset.id);const r=S.rm.find(x=>x.id===id);if(!r)return;
+    pushUndo();
+    const f=e.target.dataset.field;
+    r[f]=['usd','moq','qtyPerBottle','waste','leadTime'].includes(f)?parseFloat(e.target.value)||0:e.target.value;
+    syncRmToBom();NAQI.invalidate();recalc();scheduleSave();renderRowsRM();
+  };
+  el._rmClick=e=>{
+    if(e.target.dataset.action!=='del')return;
+    const row=e.target.closest('.drg-rmcat');if(!row)return;
+    pushUndo();S.rm=S.rm.filter(x=>x.id!==parseInt(row.dataset.id));
+    scheduleSave();renderRowsRM();
+  };
+  el.addEventListener('change',el._rmChange);el.addEventListener('click',el._rmClick);
+  const R=NAQI.model();
+  const totUSD=R.skuR.reduce((a,s)=>a+s.nb*s.rmCost,0);
+  sH('tot-rm',`USD exposure: ${U(totUSD)}/mo | COGS: ${M(R.totPkgCogs,1)} SYP/mo | Annual: ${M(R.totPkgCogs*12,0)} SYP`);
+  sH('tb-rm',S.rm.length+' mats');
 });
 
 const renderRowsMkt=()=>safe(()=>{
@@ -3409,7 +3474,7 @@ const updateLivePanel=(R)=>safe(()=>{
 // SECTION 36: MAIN RECALC & TAB NAVIGATION
 // ═══════════════════════════════════════════════
 const renderAll=()=>safe(()=>{
-  renderRowsCX();renderRowsOX();renderRowsHR();renderRowsMkt();renderRowsCond();renderRowsCompP();
+  renderRowsCX();renderRowsOX();renderRowsHR();renderRowsRM();renderRowsMkt();renderRowsCond();renderRowsCompP();
   renderRFQ();renderAlertCfg();renderSnaps();
 });
 
@@ -3469,13 +3534,16 @@ const init=()=>safe(()=>{
   document.getElementById('btn-add-cx')?.addEventListener('click',()=>addRow('cx'));
   document.getElementById('btn-add-ox')?.addEventListener('click',()=>addRow('ox'));
   document.getElementById('btn-add-hr')?.addEventListener('click',()=>addRow('hr'));
+  document.getElementById('btn-add-rm')?.addEventListener('click',()=>addRow('rm'));
   document.getElementById('btn-add-mkt')?.addEventListener('click',()=>addRow('mkt'));
   document.getElementById('btn-add-cond')?.addEventListener('click',()=>addRow('cond'));
   document.getElementById('btn-add-compp')?.addEventListener('click',()=>addRow('compp'));
   document.getElementById('btn-add-rfq')?.addEventListener('click',()=>addRow('rfq'));
   document.getElementById('btn-add-sk')?.addEventListener('click',()=>addRow('sk'));
   // Load state
-  loadSnaps();loadLS();
+  loadSnaps();
+  const _loaded=loadLS();
+  if(!_loaded)syncRmToBom(); // fresh defaults: sync catalog → BOM on first run
   // Init sliders
   initSliders();
   // Initial render
