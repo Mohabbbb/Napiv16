@@ -128,6 +128,8 @@ body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:13p
 .drg-ox{display:grid;grid-template-columns:2fr .8fr .8fr .8fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
 .dh.rm{grid-template-columns:2fr .5fr .4fr .7fr .7fr .7fr .5fr 28px;display:grid}
 .drg-rm{display:grid;grid-template-columns:2fr .5fr .4fr .7fr .7fr .7fr .5fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
+.dh.rmcat{grid-template-columns:1.8fr .7fr .3fr .55fr .55fr .45fr .4fr .4fr .65fr 28px;display:grid}
+.drg-rmcat{display:grid;grid-template-columns:1.8fr .7fr .3fr .55fr .55fr .45fr .4fr .4fr .65fr 28px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
 .bom-tab{background:none;border:1px solid var(--b1);border-radius:6px;color:var(--t2);cursor:pointer;padding:4px 10px;font-size:10px;transition:all .15s;font-family:var(--body)}
 .bom-tab:hover{border-color:var(--c1);color:var(--c1)}
 .bom-tab-active{background:rgba(0,245,195,.1);border-color:var(--c1);color:var(--c1);font-weight:600}
@@ -547,6 +549,12 @@ body{background:var(--bg0);color:var(--t1);font-family:var(--body);font-size:13p
     <div class="kpi kc2"><div class="kl">RM/Bottle Avg</div><div class="kv" id="k-rm2" style="color:var(--c2)">—</div><div class="ks">SYP</div></div>
     <div class="kpi kc3"><div class="kl">USD Exposure</div><div class="kv" id="k-rm3" style="color:var(--amber)">—</div><div class="ks">$/month</div></div>
     <div class="kpi kc5"><div class="kl">RM % Revenue</div><div class="kv" id="k-rm4" style="color:var(--c5)">—</div><div class="ks">%</div></div>
+  </div>
+  <div class="card c-rd mb">
+    <div class="card-head"><span class="card-title">Global Materials Catalog</span><button class="btn-add" id="btn-add-rm">+ Add Material</button></div>
+    <div class="dh rmcat"><span>Material</span><span>Supplier</span><span>Curr</span><span>Unit $</span><span>MOQ</span><span>Qty/Btl</span><span>Waste%</span><span>Lead d</span><span>SYP/Btl</span><span></span></div>
+    <div id="rows-rm" class="h340"></div>
+    <div class="dr-tot" id="tot-rm">—</div>
   </div>
   <div class="card c-tl mb">
     <div class="card-head"><span class="card-title">BOM by SKU</span><div id="bom-tabs" style="display:flex;gap:6px"></div></div>
@@ -1246,7 +1254,7 @@ const S={
       {id:7,mat:"Ink & Date Code",qty:1,uom:"btl",costPerUnit:.0002}
     ]}
   ],
-  sl:{exrate:12000,tax:5,discount:12,inflation:30,priceEsc:5,cogsEsc:3,termGrowth:2,sarUsd:3.75,eurUsd:0.92,wcMonths:2,hrs:8,days:26,loss:2,util:100,finEq:40,finInt:12,finYrs:5,finGrace:6},
+  sl:{exrate:12000,tax:5,discount:12,inflation:30,priceEsc:5,cogsEsc:3,volGrowth:10,termGrowth:2,sarUsd:3.75,eurUsd:0.92,wcMonths:2,hrs:8,days:26,loss:2,util:100,finEq:40,finInt:12,finYrs:5,finGrace:6},
   cx:[
     {id:1,l:"Land & Site (2,000m2)",c:"Land",a:75000},{id:2,l:"Civil & Construction",c:"Civil",a:120000},
     {id:3,l:"Foundation & Earthworks",c:"Civil",a:15000},{id:4,l:"Blow Moulding Machine x2",c:"Equipment",a:80000},
@@ -1261,11 +1269,6 @@ const S={
     {id:21,l:"ISO & Licensing",c:"Soft Costs",a:6000},{id:22,l:"Contingency (5%)",c:"Contingency",a:0}
   ],
   ox:[
-    {id:1,l:"Factory Manager",c:"Management",a:1200},{id:2,l:"Operations Supervisor",c:"Management",a:800},
-    {id:3,l:"Production Operators x6",c:"Operations",a:1800},{id:4,l:"QC Technicians x2",c:"Quality",a:500},
-    {id:5,l:"Maintenance x2",c:"Maintenance",a:600},{id:6,l:"Warehouse Staff x3",c:"Operations",a:600},
-    {id:7,l:"Delivery Drivers x2",c:"Logistics",a:400},{id:8,l:"Sales Reps x2",c:"Sales",a:600},
-    {id:9,l:"Accountant/Admin",c:"Admin",a:400},{id:10,l:"Security Guards x2",c:"Operations",a:300},
     {id:11,l:"Electricity (production)",c:"Energy",a:800},{id:12,l:"Generator Fuel",c:"Energy",a:500},
     {id:13,l:"Water Source Cost",c:"Energy",a:200},{id:14,l:"Compressed Air",c:"Energy",a:100},
     {id:15,l:"Equipment Maintenance",c:"Maintenance",a:400},{id:16,l:"Spare Parts Reserve",c:"Maintenance",a:200},
@@ -1288,12 +1291,17 @@ const S={
     {id:11,pos:"Security Guard",dept:"Operations",cnt:2,sal:150}
   ],
   rm:[
-    {id:1,mat:"Preform 330ml PCO1881 14g",sku:"330ml",usd:.0169},{id:2,mat:"Preform 500ml PCO1881 18g",sku:"500ml",usd:.0215},
-    {id:3,mat:"Preform 1500ml PCO1881 30g",sku:"1500ml",usd:.0345},{id:4,mat:"Water Cap 28mm (all)",sku:"all",usd:.0053},
-    {id:5,mat:"BOPP Label 330ml",sku:"330ml",usd:.0049},{id:6,mat:"BOPP Label 500ml",sku:"500ml",usd:.0068},
-    {id:7,mat:"BOPP Label 1500ml",sku:"1500ml",usd:.011},{id:8,mat:"Shrink Film (est/btl)",sku:"all",usd:.003},
-    {id:9,mat:"Carton (per 12 btl)",sku:"all",usd:.005},{id:10,mat:"Treated Water (per btl)",sku:"all",usd:.0008},
-    {id:11,mat:"Ink & Date Code",sku:"all",usd:.0002}
+    {id:1,mat:"Preform 330ml PCO1881 14g",sku:"330ml",supplier:"Anhui Creative",currency:"USD",usd:.0169,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:2,mat:"Preform 500ml PCO1881 18g",sku:"500ml",supplier:"Anhui Creative",currency:"USD",usd:.0215,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:3,mat:"Preform 1500ml PCO1881 30g",sku:"1500ml",supplier:"Anhui Creative",currency:"USD",usd:.0345,moq:240000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:4,mat:"Water Cap 28mm (all)",sku:"all",supplier:"Anhui Creative",currency:"USD",usd:.0053,moq:720000,qtyPerBottle:1,waste:1,leadTime:20},
+    {id:5,mat:"BOPP Label 330ml",sku:"330ml",supplier:"Anhui Creative",currency:"USD",usd:.0049,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:6,mat:"BOPP Label 500ml",sku:"500ml",supplier:"Anhui Creative",currency:"USD",usd:.0068,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:7,mat:"BOPP Label 1500ml",sku:"1500ml",supplier:"Anhui Creative",currency:"USD",usd:.011,moq:480000,qtyPerBottle:1,waste:2,leadTime:20},
+    {id:8,mat:"Shrink Film (est/btl)",sku:"all",supplier:"Local",currency:"USD",usd:.003,moq:100,qtyPerBottle:1,waste:3,leadTime:5},
+    {id:9,mat:"Carton (per 12 btl)",sku:"all",supplier:"Local",currency:"USD",usd:.005,moq:5000,qtyPerBottle:.0833,waste:1,leadTime:3},
+    {id:10,mat:"Treated Water (per btl)",sku:"all",supplier:"Local Well",currency:"USD",usd:.0008,moq:0,qtyPerBottle:1,waste:30,leadTime:0},
+    {id:11,mat:"Ink & Date Code",sku:"all",supplier:"Local",currency:"USD",usd:.0002,moq:0,qtyPerBottle:1,waste:0,leadTime:1}
   ],
   mkt:[
     {id:1,size:"0.5L",pack:"12 btl/case",factory:22000,wholesale:24150,consumer:2215,ours:2215,notes:"Ministry official"},
@@ -1496,6 +1504,13 @@ const applyState=d=>safe(()=>{
   if(d.v12){if(!S.v12)S.v12={};Object.assign(S.v12,d.v12);}
   if(d.v16){if(!S.v16)S.v16={projects:[],scenarios:[]};Object.assign(S.v16,d.v16);}
   recalcMaxIds(); // BUG-09 FIX
+  // MIGRATION: remove HR-duplicate salary items from S.ox (moved to S.hr in this version)
+  if(!S.sl._hrMigrated){
+    const HR_OX_LABELS=["Factory Manager","Operations Supervisor","Production Operators x6","QC Technicians x2","Maintenance x2","Warehouse Staff x3","Delivery Drivers x2","Sales Reps x2","Accountant/Admin","Security Guards x2"];
+    S.ox=S.ox.filter(r=>!HR_OX_LABELS.includes(r.l));
+    S.sl._hrMigrated=true;
+  }
+  syncRmToBom(); // sync catalog → SKU BOMs before recalc
   NAQI.batch(()=>{renderAll();recalc();NAQI.emit('state:loaded');});
 });
 const loadLS=()=>safe(()=>{const r=localStorage.getItem(LS_KEY);if(r){applyState(JSON.parse(r));return true}return false});
@@ -1563,7 +1578,9 @@ const calcModel=(overrides={})=>{
   const totNb=skuR.reduce((a,s)=>a+s.nb,0);
   const totRev=skuR.reduce((a,s)=>a+s.rev,0);
   const totPkgCogs=skuR.reduce((a,s)=>a+s.cogs,0);
-  const totOx=S.ox.reduce((a,r)=>a+r.a,0);
+  const totNonHrOx=S.ox.reduce((a,r)=>a+r.a,0);
+  const totHrPayroll=S.hr.reduce((a,r)=>a+(r.cnt||1)*(r.sal||0),0);
+  const totOx=totNonHrOx+totHrPayroll;
   const opexMult=overrides.opexMult||1;
   const totOpex=totOx*exr*opexMult;
   const oxPerB=totNb>0?totOpex/totNb:0;
@@ -1600,13 +1617,15 @@ const calcModel=(overrides={})=>{
   const disc=Math.max(0.01,sl.discount/100);
   const _termGrowth=Math.min(sl.termGrowth/100,disc-0.001);
   const pEsc=(sl.priceEsc||5)/100;const cEsc=(sl.cogsEsc||3)/100;const inf=(sl.inflation||30)/100;
+  const vGrow=(sl.volGrowth??10)/100;
   const cf10=[];
   for(let yr=1;yr<=10;yr++){
-    const rampF=yr<=1?1:Math.pow(1+pEsc,yr-1);
-    const cogsF=yr<=1?1:Math.pow(1+cEsc,yr-1);
-    const opexF=yr<=1?1:Math.pow(1+inf,yr-1);
-    const _rev=totRev*rampF*12;
-    const _cogs=totPkgCogs*cogsF*12;
+    const priceF=Math.pow(1+pEsc,yr-1);
+    const volF=Math.pow(1+vGrow,yr-1);
+    const cogsF=Math.pow(1+cEsc,yr-1);
+    const opexF=Math.pow(1+inf,yr-1);
+    const _rev=totRev*priceF*volF*12;
+    const _cogs=totPkgCogs*cogsF*volF*12;
     const _opex=totOpex*opexF*12;
     const _dep=_depMo*12;
     const _ebitda=_rev-_cogs-_opex;
@@ -1616,7 +1635,7 @@ const calcModel=(overrides={})=>{
     const _ds=debtSvcMo*Math.min(12,Math.max(0,nPay-(yr-1)*12));
     const _cf=_np+_dep-_ds;
     const _disc=_cf/Math.pow(1+disc,yr);
-    cf10.push({yr,rev:_rev,cogs:_cogs,opex:_opex,ebitda:_ebitda,np:_np,ds:_ds,cf:_cf,disc:_disc,cum:0});
+    cf10.push({yr,rev:_rev,cogs:_cogs,opex:_opex,ebitda:_ebitda,np:_np,ds:_ds,cf:_cf,disc:_disc,cum:0,volF,priceF});
   }
   let cumCF=0;cf10.forEach(r=>{cumCF+=r.cf;r.cum=cumCF;});
   const _lastCF=cf10[cf10.length-1].cf;
@@ -1677,7 +1696,7 @@ const calcModel=(overrides={})=>{
   if(gm>40)hs+=5;else if(gm<15)hs-=5;
   if(roic>wacc*100)hs+=5;else hs-=5;
   const healthScore=Math.max(0,Math.min(100,hs));
-  return{sl,exr,skuR,totNb,totRev,totPkgCogs,totOpex,totOx,grossProfit,gm,ebitda,ebitdaM,ebit,netProfit,nm,tax,_depMo,dscr,debtSvcMo,pmt,debt,totCx,totCxBase,contingency,wc,totInv,npv10,irr10,payback,beBtl,beRev,sfty,bP,bV,cm_btl,cf10,terminalValue,fcfMo,fcfe,totalLiters,wacc:wacc*100,roic,evaMo,nopat,investedCapSYP,Ke:Ke*100,Kd:Kd*100,taxR:taxR*100,eqFrac,healthScore};
+  return{sl,exr,skuR,totNb,totRev,totPkgCogs,totOpex,totOx,totNonHrOx,totHrPayroll,grossProfit,gm,ebitda,ebitdaM,ebit,netProfit,nm,tax,_depMo,dscr,debtSvcMo,pmt,debt,totCx,totCxBase,contingency,wc,totInv,npv10,irr10,payback,beBtl,beRev,sfty,bP,bV,cm_btl,cf10,terminalValue,fcfMo,fcfe,totalLiters,wacc:wacc*100,roic,evaMo,nopat,investedCapSYP,Ke:Ke*100,Kd:Kd*100,taxR:taxR*100,eqFrac,healthScore};
 };
 
 // ═══════════════════════════════════════════════
@@ -1788,6 +1807,7 @@ const initSliders=()=>safe(()=>{
     {key:'inflation',label:'Inflation Rate %',min:0,max:200,val:30,fmt:'pct'},
     {key:'priceEsc',label:'Price Escalation %/yr',min:-5,max:30,val:5,fmt:'pct'},
     {key:'cogsEsc',label:'COGS Escalation %/yr',min:0,max:30,val:3,fmt:'pct'},
+    {key:'volGrowth',label:'Volume Growth %/yr',min:0,max:50,val:10,fmt:'pct'},
     {key:'tax',label:'Income Tax Rate %',min:0,max:40,val:5,fmt:'pct'},
     {key:'discount',label:'Discount Rate % (WACC)',min:5,max:40,val:12,fmt:'pct'},
     {key:'termGrowth',label:'Terminal Growth Rate %',min:0,max:10,val:2,fmt:'pct'},
@@ -1886,7 +1906,7 @@ const addRow=type=>safe(()=>{
   if(type==='cx'){S.cx.splice(S.cx.length-1,0,{id:++S._ids.cx,l:"New Item",c:"Equipment",a:0});renderRowsCX();}
   else if(type==='ox'){S.ox.push({id:++S._ids.ox,l:"New Item",c:"Admin",a:0});renderRowsOX();}
   else if(type==='hr'){S.hr.push({id:++S._ids.hr,pos:"New Position",dept:"Operations",cnt:1,sal:300});renderRowsHR();}
-  else if(type==='rm'){S.rm.push({id:++S._ids.rm,mat:"New Material",sku:"all",usd:0});renderRowsRM();}
+  else if(type==='rm'){S.rm.push({id:++S._ids.rm,mat:"New Material",sku:"all",supplier:"",currency:"USD",usd:0,moq:0,qtyPerBottle:1,waste:0,leadTime:0});renderRowsRM();}
   else if(type==='mkt'){S.mkt.push({id:++S._ids.mkt,size:"New",pack:"",factory:0,wholesale:0,consumer:0,ours:0,notes:""});renderRowsMkt();}
   else if(type==='cond'){S.conds.push({id:++S._ids.cond,factor:"New Factor",val:"0",trend:"stable",impact:"Medium",notes:""});renderRowsCond();}
   else if(type==='compp'){S.compP.push({id:++S._ids.compP,date:new Date().toISOString().slice(0,10),brand:"Brand",sku:"0.5L",price:2000,channel:"Retail",notes:""});renderRowsCompP();}
@@ -1914,7 +1934,7 @@ const renderRowsOX=()=>safe(()=>{
   el._oxClick=e=>{if(e.target.dataset.action!=='del')return;const row=e.target.closest('.drg-ox');if(!row)return;pushUndo();S.ox=S.ox.filter(x=>x.id!==parseInt(row.dataset.id));recalc();scheduleSave();renderRowsOX();};
   el.addEventListener('change',el._oxChange);el.addEventListener('click',el._oxClick);
   const R=NAQI.model();
-  sH('tot-ox',`Total OPEX: ${U(R.totOx)}/mo = ${M(R.totOpex,1)} SYP/mo`);
+  sH('tot-ox',`Non-HR OPEX: ${U(R.totNonHrOx)}/mo + HR Payroll: ${U(R.totHrPayroll)}/mo = Total ${U(R.totOx)}/mo (${M(R.totOpex,1)} SYP)`);
   sH('k-ox1',M(R.totOpex,1));sH('k-ox1s',U(R.totOx)+'/mo');
   sH('k-ox2',N(R.totNb>0?R.totOpex/R.totNb:0,0));
   sH('k-ox3',P(R.totRev>0?R.totOpex/R.totRev*100:0));
@@ -1938,7 +1958,7 @@ const renderRowsHR=()=>safe(()=>{
   el.addEventListener('change',el._hrChange);el.addEventListener('click',el._hrClick);
   const totPay=S.hr.reduce((a,r)=>a+r.cnt*r.sal,0);
   const totStaff=S.hr.reduce((a,r)=>a+r.cnt,0);
-  sH('tot-hr',`Total: ${totStaff} staff | Payroll: ${U(totPay)}/mo`);
+  sH('tot-hr',`Total: ${totStaff} staff | Payroll: ${U(totPay)}/mo | ${M(totPay*(S.sl.exrate||12000),1)} SYP — <span style="color:var(--c1)">✓ Live in financial model</span>`);
   sH('k-hr1',totStaff);sH('k-hr2',U(totPay));sH('k-hr2s',M(totPay*(S.sl.exrate||12000),1)+' SYP');
   const R=NAQI.model();
   sH('k-hr3',P(R.totOpex>0?totPay*R.exr/R.totOpex*100:0));
@@ -1946,10 +1966,69 @@ const renderRowsHR=()=>safe(()=>{
   sH('tb-hr',totStaff+' staff');
 });
 
+// Sync catalog → all SKU BOMs. Runs after any S.rm change.
+const normMat=s=>s.trim().toLowerCase();
+const rmToUsd=(r)=>{
+  const v=r.usd||0;const cur=r.currency||'USD';
+  if(cur==='SAR')return v/(S.sl.sarUsd||3.75);
+  if(cur==='EUR')return v/(S.sl.eurUsd||0.92);
+  if(cur==='SYP')return v/(S.sl.exrate||12000);
+  return v;
+};
+const syncRmToBom=()=>safe(()=>{
+  const catMap=new Map(S.rm.map(r=>[normMat(r.mat),r]));
+  S.skus.forEach(sk=>{
+    (sk.bom||[]).forEach(b=>{
+      const r=catMap.get(normMat(b.mat));
+      if(!r)return;
+      const usd=rmToUsd(r);
+      const effective=usd*(1+(r.waste||0)/100);
+      b.costPerUnit=effective;
+      if((r.qtyPerBottle||0)>0)b.qty=r.qtyPerBottle;
+    });
+  });
+},'syncRmToBom');
+
 const renderRowsRM=()=>safe(()=>{
   const el=$('rows-rm');if(!el)return;
-  if(!el)return;
-  sH('tb-rm',S.rm.length+' items');
+  const exr=S.sl.exrate||12000;
+  el.innerHTML=S.rm.map(r=>{
+    const unitUsd=rmToUsd(r);
+    const eff=unitUsd*(1+(r.waste||0)/100);
+    const sypPerBtl=eff*(r.qtyPerBottle||1)*exr;
+    const curs=['USD','SAR','EUR','SYP'];
+    return`<div class="drg-rmcat" data-id="${r.id}">
+      <input class="ixs" value="${eQ(r.mat)}" data-field="mat">
+      <input class="ixs" value="${eQ(r.supplier||'')}" data-field="supplier">
+      <select class="ixs" data-field="currency">${curs.map(c=>`<option${(r.currency||'USD')===c?' selected':''}>${c}</option>`).join('')}</select>
+      <input class="ixs" type="number" value="${r.usd||0}" data-field="usd" step="0.0001" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.moq||0}" data-field="moq" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.qtyPerBottle??1}" data-field="qtyPerBottle" step="0.0001" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.waste||0}" data-field="waste" step="0.1" style="font-family:var(--mono)">
+      <input class="ixs" type="number" value="${r.leadTime||0}" data-field="leadTime" style="font-family:var(--mono)">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--c1);padding:2px 4px">${N(sypPerBtl,1)}</span>
+      <button class="btn-rm" data-action="del">✕</button>
+    </div>`;
+  }).join('');
+  el.removeEventListener('change',el._rmChange||null);el.removeEventListener('click',el._rmClick||null);
+  el._rmChange=e=>{
+    const row=e.target.closest('.drg-rmcat');if(!row)return;
+    const id=parseInt(row.dataset.id);const r=S.rm.find(x=>x.id===id);if(!r)return;
+    pushUndo();
+    const f=e.target.dataset.field;
+    r[f]=['usd','moq','qtyPerBottle','waste','leadTime'].includes(f)?parseFloat(e.target.value)||0:e.target.value;
+    syncRmToBom();NAQI.invalidate();recalc();scheduleSave();renderRowsRM();
+  };
+  el._rmClick=e=>{
+    if(e.target.dataset.action!=='del')return;
+    const row=e.target.closest('.drg-rmcat');if(!row)return;
+    pushUndo();S.rm=S.rm.filter(x=>x.id!==parseInt(row.dataset.id));
+    scheduleSave();renderRowsRM();
+  };
+  el.addEventListener('change',el._rmChange);el.addEventListener('click',el._rmClick);
+  const R=NAQI.model();
+  const totUSD=R.skuR.reduce((a,s)=>a+s.nb*s.rmCost,0);
+  sH('tot-rm',`USD exposure: ${U(totUSD)}/mo | COGS: ${M(R.totPkgCogs,1)} SYP/mo | Annual: ${M(R.totPkgCogs*12,0)} SYP | ${S.rm.length} materials`);
 });
 
 const renderRowsMkt=()=>safe(()=>{
@@ -2622,11 +2701,13 @@ const renderCF72=()=>safe(()=>{
   const R=NAQI.model();
   const ramp=S.v8.ramp||[40,55,68,78,88,94,98,100,100,100,100,100];
   const pEsc=(R.sl.priceEsc||5)/100;const cEsc=(R.sl.cogsEsc||3)/100;const inf=(R.sl.inflation||30)/100;
+  const vGrow=(R.sl.volGrowth??10)/100;
   const rows=[];let cum=0;
   for(let m=1;m<=72;m++){
     const yr=Math.ceil(m/12);const ri=Math.min(11,m-1);const rf=ramp[ri]/100;
+    const volF=Math.pow(1+vGrow,yr-1);
     const revF=Math.pow(1+pEsc,yr-1);const cogsF=Math.pow(1+cEsc,yr-1);const opexF=Math.pow(1+inf,yr-1);
-    const rev=R.totRev*rf*revF;const cogs=R.totPkgCogs*rf*cogsF;const opex=R.totOpex*opexF;
+    const rev=R.totRev*rf*revF*volF;const cogs=R.totPkgCogs*rf*cogsF*volF;const opex=R.totOpex*opexF;
     const ebitda=rev-cogs-opex;const dep=R._depMo;const np=ebitda-dep-(R.sl.tax/100)*Math.max(0,ebitda-dep);
     const ds=R.debtSvcMo*Math.min(1,Math.max(0,(R.sl.finYrs*12-(m-1))/1));
     const cf=np+dep-ds;cum+=cf;
@@ -2886,13 +2967,15 @@ const updateExecSuite=(R)=>safe(()=>{
   // 36-month forecast
   const ramp=S.v8.ramp||[40,55,68,78,88,94,98,100,100,100,100,100];
   const pEsc=(R.sl.priceEsc||5)/100;const inf=(R.sl.inflation||30)/100;
+  const vGrow=(R.sl.volGrowth??10)/100;
   let rows='<thead><tr><th>Mo</th><th>Yr</th><th>Cap%</th><th>Revenue SYP M</th><th>Net Profit SYP M</th><th>Debt Svc SYP M</th><th>Free CF SYP M</th><th>Cumulative SYP B</th></tr></thead><tbody>';
   let cum=0;
   for(let m=1;m<=36;m++){
     const yr=Math.ceil(m/12);const ri=Math.min(11,m-1);const rf=ramp[ri]/100;
+    const volF=Math.pow(1+vGrow,yr-1);
     const revF=Math.pow(1+pEsc,yr-1);const opexF=Math.pow(1+inf,yr-1);
     // BUG-14 FIX: NP recomputed properly — COGS scales with ramp, OPEX only inflates
-    const rev=R.totRev*rf*revF;const cogs_m=R.totPkgCogs*rf*revF;const opex_m=R.totOpex*opexF;const ebit_m=rev-cogs_m-opex_m-R._depMo;const np=ebit_m-Math.max(0,ebit_m)*(R.sl.tax/100);const ds=R.debtSvcMo;
+    const rev=R.totRev*rf*revF*volF;const cogs_m=R.totPkgCogs*rf*revF*volF;const opex_m=R.totOpex*opexF;const ebit_m=rev-cogs_m-opex_m-R._depMo;const np=ebit_m-Math.max(0,ebit_m)*(R.sl.tax/100);const ds=R.debtSvcMo;
     const cf=np+R._depMo-ds;cum+=cf;
     if(m<=12||m%3===0)rows+=`<tr><td>${m}</td><td>${yr}</td><td>${N(rf*100,0)}%</td><td style="font-family:var(--mono)">${M(rev,1)}</td><td style="font-family:var(--mono);color:${np>=0?'var(--c1)':'var(--red)'}">${M(np,1)}</td><td style="font-family:var(--mono)">${M(ds,1)}</td><td style="font-family:var(--mono);color:${cf>=0?'var(--green)':'var(--red)'}">${M(cf,1)}</td><td style="font-family:var(--mono)">${N(cum/1e9,3)}</td></tr>`;
   }
@@ -3406,7 +3489,7 @@ const updateLivePanel=(R)=>safe(()=>{
 // SECTION 36: MAIN RECALC & TAB NAVIGATION
 // ═══════════════════════════════════════════════
 const renderAll=()=>safe(()=>{
-  renderRowsCX();renderRowsOX();renderRowsHR();renderRowsMkt();renderRowsCond();renderRowsCompP();
+  renderRowsCX();renderRowsOX();renderRowsHR();renderRowsRM();renderRowsMkt();renderRowsCond();renderRowsCompP();
   renderRFQ();renderAlertCfg();renderSnaps();
 });
 
@@ -3455,7 +3538,7 @@ const showTab=(idx)=>safe(()=>{
   // BUG-10 FIX: guard with typeof check then call registry
   if(typeof NAQI.renderActiveTab==='function')NAQI.renderActiveTab(idx);
   NAQI.emit('tab:changed',idx);
-  recalc();
+  if(NAQI._dirty)recalc();
 },'showTab:'+idx);
 
 // ═══════════════════════════════════════════════
@@ -3466,13 +3549,16 @@ const init=()=>safe(()=>{
   document.getElementById('btn-add-cx')?.addEventListener('click',()=>addRow('cx'));
   document.getElementById('btn-add-ox')?.addEventListener('click',()=>addRow('ox'));
   document.getElementById('btn-add-hr')?.addEventListener('click',()=>addRow('hr'));
+  document.getElementById('btn-add-rm')?.addEventListener('click',()=>addRow('rm'));
   document.getElementById('btn-add-mkt')?.addEventListener('click',()=>addRow('mkt'));
   document.getElementById('btn-add-cond')?.addEventListener('click',()=>addRow('cond'));
   document.getElementById('btn-add-compp')?.addEventListener('click',()=>addRow('compp'));
   document.getElementById('btn-add-rfq')?.addEventListener('click',()=>addRow('rfq'));
   document.getElementById('btn-add-sk')?.addEventListener('click',()=>addRow('sk'));
   // Load state
-  loadSnaps();loadLS();
+  loadSnaps();
+  const _loaded=loadLS();
+  if(!_loaded)syncRmToBom(); // fresh defaults: sync catalog → BOM on first run
   // Init sliders
   initSliders();
   // Initial render
